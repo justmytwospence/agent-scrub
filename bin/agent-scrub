@@ -1,0 +1,35 @@
+#!/bin/sh
+# Runs bin/agent-scrub.ts on a Node that strips types and has node:sqlite unflagged: 22.13+,
+# 23.4+ or 24+ (an nvm 23.1 first on PATH is skipped for Homebrew's). --experimental-strip-types
+# is needed before 22.18 and accepted after. Harnesses can run commands with a thin PATH, so
+# Homebrew's prefixes, ~/.local/bin (a release-binary gitleaks) and nvm's newest Node are added.
+# Follow the ~/.local/bin symlink back to the checkout.
+self=$0
+while [ -L "$self" ]; do
+    link=$(readlink "$self")
+    case "$link" in /*) self=$link ;; *) self=${self%/*}/$link ;; esac
+done
+case "$self" in */*) here=${self%/*} ;; *) here=. ;; esac
+here=$(cd "$here" && pwd)
+PATH="$PATH:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:$HOME/.local/bin"
+nvm_node=$(ls -d "$HOME"/.nvm/versions/node/v*/bin 2>/dev/null | sort -V | tail -1)
+[ -n "$nvm_node" ] && PATH="$PATH:$nvm_node"
+export PATH
+usable() {
+    [ -n "$1" ] && [ -x "$1" ] || return 1
+    version=$("$1" --version 2>/dev/null) || return 1
+    version=${version#v}
+    major=${version%%.*}
+    rest=${version#*.}
+    minor=${rest%%.*}
+    [ "$major" -ge 24 ] 2>/dev/null ||
+        { [ "$major" -eq 23 ] && [ "$minor" -ge 4 ]; } 2>/dev/null ||
+        { [ "$major" -eq 22 ] && [ "$minor" -ge 13 ]; } 2>/dev/null
+}
+for node in "$(command -v node 2>/dev/null)" /opt/homebrew/bin/node /home/linuxbrew/.linuxbrew/bin/node /usr/local/bin/node /usr/bin/node "$nvm_node/node"; do
+    if usable "$node"; then
+        exec "$node" --no-warnings --experimental-strip-types "$here/agent-scrub.ts" "$@"
+    fi
+done
+echo "agent-scrub: no Node 22.13+ found" >&2
+exit 1

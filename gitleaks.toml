@@ -1,0 +1,7 @@
+# gitleaks' default rules, minus the ones that misfire on chat logs. agent-scrub feeds gitleaks
+# many log segments as one stream, so a rule whose regex does not itself contain its keyword fires
+# on every match in the chunk once the keyword appears anywhere in it.
+[extend]
+useDefault = true
+# Matches any 40-character hex string (every git commit SHA) once "sourcegraph" is in the chunk.
+disabledRules = ["sourcegraph-access-token"]

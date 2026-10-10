@@ -1,0 +1,36 @@
+{
+  "name": "@justmytwospence/agent-scrub",
+  "version": "0.1.0",
+  "description": "Lets a coding agent (Claude Code, Codex, pi, opencode) mask the credentials in its own session log once it is done with them.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "agent-scrub": "./bin/agent-scrub"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "pi",
+    "opencode",
+    "secrets",
+    "gitleaks"
+  ],
+  "scripts": {
+    "check": "npm run typecheck && npm test",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justmytwospence/agent-scrub"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}
