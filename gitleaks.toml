@@ -5,3 +5,11 @@
 useDefault = true
 # Matches any 40-character hex string (every git commit SHA) once "sourcegraph" is in the chunk.
 disabledRules = ["sourcegraph-access-token"]
+
+# A Plaid access token anywhere, not only near the word "plaid" (the default rule's condition):
+# a linking tool prints it next to the institution's name.
+[[rules]]
+id = "plaid-access-token-bare"
+description = "Plaid access token"
+regex = '''access-(?:sandbox|development|production)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+keywords = ["access-sandbox", "access-development", "access-production"]

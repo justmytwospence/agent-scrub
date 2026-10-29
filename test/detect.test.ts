@@ -32,7 +32,7 @@ describe("env files", () => {
     const dir = mkdtempSync(join(tmpdir(), "scrub-glob-"));
     const files: Record<string, string> = {
       a: "PLAID_SECRET=f7d3b90794f997e3eb80ee2a809a806x\nDOMAIN=examplehomelab.com\n",
-      b: "PLAID_CLIENT_ID=6ae3b90794f997000dda1824\n",
+      b: "PLAID_CLIENT_ID=6ae3b90794f997000dda1824\nPLAID_TOKENS={\"bank\":\"access-production-1b2c3d4e-0000-4a4a-9f9f-1234567890ab\"}\n",
     };
     for (const [svc, body] of Object.entries(files)) {
       mkdirSync(join(dir, svc));
@@ -43,6 +43,7 @@ describe("env files", () => {
     const known = knownValues([], [], {}, found);
     expect(known.get("f7d3b90794f997e3eb80ee2a809a806x")).toBe("PLAID_SECRET");
     expect(known.get("6ae3b90794f997000dda1824")).toBe("PLAID_CLIENT_ID");
+    expect(known.get("access-production-1b2c3d4e-0000-4a4a-9f9f-1234567890ab")).toBe("PLAID_TOKENS.bank");
     expect(known.has("examplehomelab.com")).toBe(false);
     expect(knownValues(found, [], {}).has("examplehomelab.com")).toBe(true);
     expect(globbed("/plain/path")).toEqual(["/plain/path"]);

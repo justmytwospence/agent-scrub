@@ -76,7 +76,7 @@ const TOKEN_KEY = /(token|key|secret|password)$/i;
 
 /** The credentials this machine holds, value -> name: KEY=VALUE files, token-like leaves of auth JSON, and *_KEY/_TOKEN/_SECRET variables. */
 /** Variable names in service env files that hold a credential. */
-export const CREDENTIAL_NAME = /(KEY|TOKEN|SECRET|PASSWORD|PASS|CLIENT_ID)$/i;
+export const CREDENTIAL_NAME = /(KEYS?|TOKENS?|SECRETS?|PASSWORDS?|PASS|CLIENT_ID)$/i;
 
 export function knownValues(secretsFiles: string[], authFiles: string[], env: NodeJS.ProcessEnv = process.env, envFiles: string[] = []): Map<string, string> {
   const known = new Map<string, string>();
@@ -87,7 +87,18 @@ export function knownValues(secretsFiles: string[], authFiles: string[], env: No
     if (!existsSync(file)) return;
     for (const line of readFileSync(file, "utf8").split("\n")) {
       const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
-      if (m && (!only || only.test(m[1]))) add(m[2].replace(/^(['"])(.*)\1$/, "$2"), m[1]);
+      if (!m || (only && !only.test(m[1]))) continue;
+      const value = m[2].replace(/^(['"])(.*)\1$/, "$2");
+      // A JSON object or array of credentials (PLAID_TOKENS={"bank":"access-..."}): each string in it.
+      let json: unknown;
+      if (/^[[{]/.test(value)) try { json = JSON.parse(value); } catch { json = undefined; }
+      if (json && typeof json === "object") {
+        const leaves = (node: unknown, path: string): void => {
+          if (typeof node === "string") add(node, path);
+          else if (node && typeof node === "object") for (const [k, v] of Object.entries(node)) leaves(v, `${path}.${k}`);
+        };
+        leaves(json, m[1]);
+      } else add(value, m[1]);
     }
   };
   for (const file of secretsFiles) readEnv(file);
