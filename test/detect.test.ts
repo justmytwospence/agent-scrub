@@ -22,3 +22,23 @@ describe("detection", () => {
     expect([...known.keys()]).toEqual([token]);
   });
 });
+
+describe("secretsFiles globs", () => {
+  it("expands a glob to every matching KEY=VALUE file", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { globbed } = await import("../src/config.ts");
+    const dir = mkdtempSync(join(tmpdir(), "scrub-glob-"));
+    for (const [svc, line] of [["a", "PLAID_SECRET=f7d3b90794f997e3eb80ee2a809a806x"], ["b", "CLIENT=6ae3b90794f997000dda1824"]]) {
+      mkdirSync(join(dir, svc));
+      writeFileSync(join(dir, svc, ".env"), `${line}\n`);
+    }
+    const files = globbed(join(dir, "*", ".env"));
+    expect(files).toHaveLength(2);
+    const known = knownValues(files, [], {});
+    expect(known.get("f7d3b90794f997e3eb80ee2a809a806x")).toBe("PLAID_SECRET");
+    expect(known.get("6ae3b90794f997000dda1824")).toBe("CLIENT");
+    expect(globbed("/plain/path")).toEqual(["/plain/path"]);
+  });
+});

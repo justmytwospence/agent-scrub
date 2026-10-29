@@ -1,6 +1,6 @@
 // Settings and where things live.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, globSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -9,7 +9,7 @@ export interface Config {
   jev: boolean;
   /** Keep a generic hit (keyword plus a random-looking value) once Jev's probability that it is a credential reaches this. */
   secretThreshold: number;
-  /** KEY=VALUE files whose values are masked wherever they appear. */
+  /** KEY=VALUE files whose values are masked wherever they appear. Glob patterns are expanded. */
   secretsFiles: string[];
   /** JSON files whose credential values (keys ending in token, key, secret, password) are masked wherever they appear. */
   authFiles: string[];
@@ -47,6 +47,12 @@ export function defaults(): Config {
   };
 }
 
+/** A path with glob characters becomes the files it matches (sorted); a plain path stays as is. */
+export function globbed(path: string): string[] {
+  if (!/[*?[{]/.test(path)) return [path];
+  return globSync(path, { withFileTypes: false }).sort();
+}
+
 export function loadConfig(): Config {
   const config = defaults();
   const path = configPath();
@@ -59,7 +65,7 @@ export function loadConfig(): Config {
   return {
     ...config,
     ...raw,
-    secretsFiles: (raw.secretsFiles ?? config.secretsFiles).map(expand),
+    secretsFiles: (raw.secretsFiles ?? config.secretsFiles).map(expand).flatMap(globbed),
     authFiles: (raw.authFiles ?? config.authFiles).map(expand),
   };
 }

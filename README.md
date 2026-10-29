@@ -63,6 +63,9 @@ in `~/.config/agents/agent-scrub.json`:
 }
 ```
 
+`secretsFiles` entries may be glob patterns, such as `"~/homelab/*/.env"` for every stack's
+env file; missing files are skipped.
+
 ## Development
 
 ```sh
