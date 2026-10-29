@@ -65,7 +65,7 @@ export async function scrub(session: Session, config: Config, opts: { dryRun?: b
     const segments = session.sources.flatMap((s) => segmentsOf(s, dbs));
     result.scannedBytes = segments.reduce((n, s) => n + s.buf.length, 0);
     if (segments.length === 0) return result;
-    const known = knownValues(config.secretsFiles, config.authFiles);
+    const known = knownValues(config.secretsFiles, config.authFiles, process.env, config.envFiles);
     const findings = await gitleaks(config.gitleaks, segments.map((s) => s.buf), tmpdir(), Math.max(2, Math.floor(availableParallelism() / 2)));
     for (const seg of segments) seg.hits = locate(seg.buf, findings, known);
 

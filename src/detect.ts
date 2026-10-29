@@ -75,18 +75,23 @@ const KNOWN_MIN = 12;
 const TOKEN_KEY = /(token|key|secret|password)$/i;
 
 /** The credentials this machine holds, value -> name: KEY=VALUE files, token-like leaves of auth JSON, and *_KEY/_TOKEN/_SECRET variables. */
-export function knownValues(secretsFiles: string[], authFiles: string[], env: NodeJS.ProcessEnv = process.env): Map<string, string> {
+/** Variable names in service env files that hold a credential. */
+export const CREDENTIAL_NAME = /(KEY|TOKEN|SECRET|PASSWORD|PASS|CLIENT_ID)$/i;
+
+export function knownValues(secretsFiles: string[], authFiles: string[], env: NodeJS.ProcessEnv = process.env, envFiles: string[] = []): Map<string, string> {
   const known = new Map<string, string>();
   const add = (value: unknown, name: string) => {
     if (typeof value === "string" && value.length >= KNOWN_MIN && !/\s|:\/\//.test(value) && entropy(value) >= 3) known.set(value, name);
   };
-  for (const file of secretsFiles) {
-    if (!existsSync(file)) continue;
+  const readEnv = (file: string, only?: RegExp) => {
+    if (!existsSync(file)) return;
     for (const line of readFileSync(file, "utf8").split("\n")) {
       const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
-      if (m) add(m[2].replace(/^(['"])(.*)\1$/, "$2"), m[1]);
+      if (m && (!only || only.test(m[1]))) add(m[2].replace(/^(['"])(.*)\1$/, "$2"), m[1]);
     }
-  }
+  };
+  for (const file of secretsFiles) readEnv(file);
+  for (const file of envFiles) readEnv(file, CREDENTIAL_NAME);
   for (const file of authFiles) {
     if (!existsSync(file)) continue;
     let json: unknown;

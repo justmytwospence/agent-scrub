@@ -23,22 +23,28 @@ describe("detection", () => {
   });
 });
 
-describe("secretsFiles globs", () => {
-  it("expands a glob to every matching KEY=VALUE file", async () => {
+describe("env files", () => {
+  it("expands globs and keeps only credential-named values", async () => {
     const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
     const { globbed } = await import("../src/config.ts");
     const dir = mkdtempSync(join(tmpdir(), "scrub-glob-"));
-    for (const [svc, line] of [["a", "PLAID_SECRET=f7d3b90794f997e3eb80ee2a809a806x"], ["b", "CLIENT=6ae3b90794f997000dda1824"]]) {
+    const files: Record<string, string> = {
+      a: "PLAID_SECRET=f7d3b90794f997e3eb80ee2a809a806x\nDOMAIN=examplehomelab.com\n",
+      b: "PLAID_CLIENT_ID=6ae3b90794f997000dda1824\n",
+    };
+    for (const [svc, body] of Object.entries(files)) {
       mkdirSync(join(dir, svc));
-      writeFileSync(join(dir, svc, ".env"), `${line}\n`);
+      writeFileSync(join(dir, svc, ".env"), body);
     }
-    const files = globbed(join(dir, "*", ".env"));
-    expect(files).toHaveLength(2);
-    const known = knownValues(files, [], {});
+    const found = globbed(join(dir, "*", ".env"));
+    expect(found).toHaveLength(2);
+    const known = knownValues([], [], {}, found);
     expect(known.get("f7d3b90794f997e3eb80ee2a809a806x")).toBe("PLAID_SECRET");
-    expect(known.get("6ae3b90794f997000dda1824")).toBe("CLIENT");
+    expect(known.get("6ae3b90794f997000dda1824")).toBe("PLAID_CLIENT_ID");
+    expect(known.has("examplehomelab.com")).toBe(false);
+    expect(knownValues(found, [], {}).has("examplehomelab.com")).toBe(true);
     expect(globbed("/plain/path")).toEqual(["/plain/path"]);
   });
 });

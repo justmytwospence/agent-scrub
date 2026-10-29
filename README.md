@@ -59,12 +59,15 @@ in `~/.config/agents/agent-scrub.json`:
   "secretThreshold": 0.35,
   "secretsFiles": ["~/.config/dotfiles/secrets.env"],
   "authFiles": ["~/.codex/auth.json", "~/.pi/agent/auth.json"],
+  "envFiles": ["~/homelab/*/.env"],
   "gitleaks": "gitleaks"
 }
 ```
 
-`secretsFiles` entries may be glob patterns, such as `"~/homelab/*/.env"` for every stack's
-env file; missing files are skipped.
+`secretsFiles` mask every value in the file. `envFiles` (for services' `.env` files, next to
+a `DOMAIN` or `TZ`) mask only values whose name ends in `KEY`, `TOKEN`, `SECRET`, `PASSWORD`,
+`PASS` or `CLIENT_ID`. Both take glob patterns, such as `"~/homelab/*/.env"`; missing files
+are skipped.
 
 ## Development
 

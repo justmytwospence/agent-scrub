@@ -11,6 +11,12 @@ export interface Config {
   secretThreshold: number;
   /** KEY=VALUE files whose values are masked wherever they appear. Glob patterns are expanded. */
   secretsFiles: string[];
+  /**
+   * Service env files (KEY=VALUE, glob patterns expanded): only values whose variable name
+   * marks a credential (ending in KEY, TOKEN, SECRET, PASSWORD, PASS or CLIENT_ID) are masked,
+   * so a DOMAIN or TZ in the same file is left alone.
+   */
+  envFiles: string[];
   /** JSON files whose credential values (keys ending in token, key, secret, password) are masked wherever they appear. */
   authFiles: string[];
   /** The gitleaks binary. */
@@ -35,6 +41,7 @@ export function defaults(): Config {
     jev: true,
     secretThreshold: 0.35,
     secretsFiles: [join(h, ".config", "dotfiles", "secrets.env")],
+    envFiles: [],
     authFiles: [
       join(codexHome(), "auth.json"),
       join(h, ".claude", ".credentials.json"),
@@ -66,6 +73,7 @@ export function loadConfig(): Config {
     ...config,
     ...raw,
     secretsFiles: (raw.secretsFiles ?? config.secretsFiles).map(expand).flatMap(globbed),
+    envFiles: (raw.envFiles ?? config.envFiles).map(expand).flatMap(globbed),
     authFiles: (raw.authFiles ?? config.authFiles).map(expand),
   };
 }
